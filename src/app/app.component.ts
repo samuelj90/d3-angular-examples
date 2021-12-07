@@ -1,18 +1,10 @@
-import { Component, VERSION } from '@angular/core';
-import { JsonGeneratorService } from './shared/json-generator.service';
+import { Component } from '@angular/core';
 
 @Component({
-  selector: 'my-app',
+  selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
-  data;
-  constructor(private jsonGeneratorService: JsonGeneratorService);
-
-  ngOnInit() {
-    this.jsonGeneratorService
-      .getProjectSchedule()
-      .subscribe((data) => (this.data = data));
-  }
+export class AppComponent {
+  title = 'd3-angular';
 }

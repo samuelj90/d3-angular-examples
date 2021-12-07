@@ -1,0 +1,7 @@
+.d3-chart {
+  min-width: 100%;
+  min-height: calc(100vh - 20px);
+  svg {
+    border: 1px solid #eee;
+  }
+}
