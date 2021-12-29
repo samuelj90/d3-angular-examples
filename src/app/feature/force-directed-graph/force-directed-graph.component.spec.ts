@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ProjectScheduleComponent } from './project-schedule.component';
+import { ForceDirectedGraphComponent } from './force-directed-graph.component';
 
-describe('ProjectScheduleComponent', () => {
-  let component: ProjectScheduleComponent;
-  let fixture: ComponentFixture<ProjectScheduleComponent>;
+describe('ForceDirectedGraphComponent', () => {
+  let component: ForceDirectedGraphComponent;
+  let fixture: ComponentFixture<ForceDirectedGraphComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ProjectScheduleComponent ]
+      declarations: [ ForceDirectedGraphComponent ]
     })
     .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ProjectScheduleComponent);
+    fixture = TestBed.createComponent(ForceDirectedGraphComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

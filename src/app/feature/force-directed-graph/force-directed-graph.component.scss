@@ -1,0 +1,99 @@
+#graphContainer {
+  width: calc(100vw - 15px);
+  height: calc(100vh - 5px);
+  svg {
+    fill: rgba(0, 0, 0, 0.5) !important;
+    #nodes {
+      circle {
+        &.selected {
+          fill: rgba(255, 255, 255, 1) !important;
+          stroke: rgba(255, 255, 255, 1) !important;
+        }
+      }
+    }
+    #links {
+      .selected {
+        stroke: rgba(255, 255, 255, 1) !important;
+      }
+    }
+  }
+}
+.search {
+  $inputPadding: 10px;
+  $buttonWidth: 50px;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  input {
+    padding: $inputPadding;
+    border-radius: 0;
+    float: left;
+    border: none;
+  }
+  input[type="text"] {
+    width: calc(100% - #{$buttonWidth} - #{2 * $inputPadding});
+  }
+  input[type="submit"] {
+    width: $buttonWidth;
+  }
+  background: rgba(176, 196, 222, 0.75);
+  padding: 10px;
+  min-width: 300px;
+}
+.selection-control {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 1;
+  background: rgba(176, 196, 222, 0.75);
+  padding: 5px;
+  div {
+    clear: both;
+    border: 1px solid #eee;
+    margin: 5px;
+    padding: 5px 10px;
+  }
+}
+
+.actions {
+  position: fixed;
+  bottom: 10px;
+  height: 50px;
+  width: auto;
+  position: fixed;
+  left: 50%;
+  transform: translate(-50%, 0);
+  .action-button {
+    width: 60px;
+    height: 50px;
+    border: 1px solid rgba(0, 0, 0, 0.75);
+    background: rgba(176, 196, 222, 0.75);
+    float: left;
+    margin: 0 5px;
+    line-height: 50px;
+    font-size: 25px;
+    text-align: center;
+    &:hover {
+      background: rgba(176, 196, 222, 1);
+    }
+  }
+}
+.graph-controls {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  .zoom-control {
+    background: rgba(176, 196, 222, 0.75) none repeat scroll 0% 0%;
+    border: 1px solid rgba(0, 0, 0, 0.75);
+    color: rgba(0, 0, 0, 0.75);
+    display: block;
+    height: 20px;
+    margin: 5px;
+    padding: 0px;
+    text-align: center;
+    width: 30px;
+    cursor: pointer;
+    line-height: 20px;
+  }
+}
