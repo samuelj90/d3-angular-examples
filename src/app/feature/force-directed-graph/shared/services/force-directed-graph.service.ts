@@ -31,7 +31,7 @@ export class ForceDirectedGraphService {
         Promise.all([
           csv('/assets/entityinfo.csv'),
           csv('/assets/relationship.csv'),
-          csv('/assets/transaction.csv'),
+          csv('/assets/transaction-1.csv'),
         ]).then(
           ([entityInfos, relationships, transactions]: [
             DSVRowArray<string>,
@@ -114,8 +114,13 @@ export class ForceDirectedGraphService {
           .attr('height', '100%')
           .attr('fill', '#000000');
         const mainGroup = svg.append('g').attr('id', 'main-group');
-        svg
-          .append('defs')
+        const linkDirectionMarkers: Selection<
+          SVGGElement,
+          ForceDirectedGraphLink[],
+          any,
+          ForceDirectedGraphLink
+        > = svg.append('defs').append('g').attr('id', 'markers');
+        linkDirectionMarkers
           .selectAll('.marker')
           .data(links)
           .enter()
@@ -126,7 +131,7 @@ export class ForceDirectedGraphService {
           })
           .attr('viewBox', '0 -2.5 5 5')
           .attr('refX', (d) => {
-            return Number((d.target as ForceDirectedGraphNode).size) * 3 + 5;
+            return Number((d.target as ForceDirectedGraphNode).size) * 2 + 5;
           })
           .attr('refY', 0)
           .attr('markerWidth', 5) // markerWidth equals viewBox width
@@ -137,6 +142,28 @@ export class ForceDirectedGraphService {
           .style('stroke', (d) => linkColor(d.type))
           .style('fill', (d) => linkColor(d.type))
           .style('opacity', '1');
+        linkDirectionMarkers
+          .selectAll('.marker-selected')
+          .data(links)
+          .enter()
+          .append('marker')
+          .attr('class', 'marker-selected')
+          .attr('id', (d) => {
+            return 'selected-marker-' + (d.target as ForceDirectedGraphNode).id;
+          })
+          .attr('viewBox', '0 -2.5 5 5')
+          .attr('refX', (d) => {
+            return Number((d.target as ForceDirectedGraphNode).size) * 2 + 5;
+          })
+          .attr('refY', 0)
+          .attr('markerWidth', 5) // markerWidth equals viewBox width
+          .attr('markerHeight', 5)
+          .attr('orient', 'auto')
+          .append('path')
+          .attr('d', 'M0,-2.5 L5,0 L0,2.5')
+          .style('stroke', 'rgba(255, 255, 255, 0.5)')
+          .style('fill', 'rgba(255, 255, 255, 1)')
+          .style('opacity', '1');
         const link = mainGroup
           .append('g')
           .attr('id', 'links')
@@ -145,7 +172,13 @@ export class ForceDirectedGraphService {
           .selectAll('path')
           .data(links)
           .join('path')
-          .attr('id', (d) => 'node-' + d.source + '-' + d.target)
+          .attr(
+            'id',
+            (d) =>
+              `node-${(d.source as ForceDirectedGraphNode).id}-${
+                (d.target as ForceDirectedGraphNode).id
+              }`
+          )
           .attr('stroke', (d) => linkColor(d.type))
           .attr(
             'marker-end',
@@ -184,13 +217,13 @@ export class ForceDirectedGraphService {
           .selectAll('g')
           .data(nodes)
           .join('g')
-          .attr('id', (d) => 'node-' + d.id)
+          .attr('id', (d) => `node-${d.id}`)
           .call(dragHandler(simulation).bind(this));
         node
           .append('circle')
-          .attr('stroke', (d) => nodeColor(d.healthStatus))
+          .attr('stroke', 'rgb(0, 0, 0)')
           .attr('stroke-width', 1.5)
-          .attr('r', (d) => Number(d.size) * 3)
+          .attr('r', (d) => Number(d.size) * 2)
           .attr('fill', (d) => nodeColor(d.healthStatus));
         node
           .append('text')

@@ -12,10 +12,9 @@
 
     </svg>
     <div class="graph-controls">
-        <div class="zoom-control zoom-in" id="zoomIn">＋</div>
-        <div class="zoom-control zoom-out" id="zoomOut">－</div>
-        <div class="zoom-control zoom-reset" id="zoomReset"> ↺</div>
-        <div class="zoom-control zoom-brush" id="zoomBrush">¤</div>
+        <div class="zoom-control zoom-in" id="zoomIn">+</div>
+        <div class="zoom-control zoom-out" id="zoomOut">-</div>
+        <div class="zoom-control zoom-reset" id="zoomReset">↺</div>
     </div>
     <div class="selection-control">
         <div (click)="onSelectionTypeChanged('multipleNodes')">
@@ -26,7 +25,7 @@
                 [(ngModel)]="selectionType" [value]="'debtLayers'" /> Debt Layers</div>
     </div>
     <div class="actions">
-        <div class="action-button">😀</div>
+        <div class="action-button" (click)="actionButtonClicked('1')">😀</div>
         <div class="action-button">😉</div>
         <div class="action-button">😐</div>
         <div class="action-button">😍</div>

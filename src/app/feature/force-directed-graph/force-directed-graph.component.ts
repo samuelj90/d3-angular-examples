@@ -11,15 +11,13 @@ import {
   scaleOrdinal,
   select as d3select,
   Selection as d3Selection,
-  schemeCategory10,
   BaseType,
   select,
   ZoomBehavior,
   TransitionLike,
-  zoomIdentity,
-  zoom,
 } from 'd3';
 import {
+  ForceDirectedGraphData,
   ForceDirectedGraphLink,
   ForceDirectedGraphNode,
 } from './shared/services/force-directed-graph-data';
@@ -51,13 +49,15 @@ export class ForceDirectedGraphComponent implements OnInit {
     any
   >;
   zoomHandler?: ZoomBehavior<Element, unknown>;
+  data: ForceDirectedGraphData | null = null;
   selectionType: string = 'debtLayers';
+  debtLayerNode: ForceDirectedGraphNode | undefined;
+  multipleNodeSelectionData: ForceDirectedGraphNode[] | undefined;
   constructor(private forceDirectedGraphService: ForceDirectedGraphService) {
     this.searchForm = new FormGroup({
       q: new FormControl('', [Validators.required]),
     });
   }
-
   ngOnInit(): void {
     this.svg = d3select<SVGSVGElement, any>('svg');
   }
@@ -66,11 +66,11 @@ export class ForceDirectedGraphComponent implements OnInit {
     this.initializeHeightAndWidth();
     this.adjustProperties();
   }
-
   ngAfterViewInit() {
     this.initializeHeightAndWidth();
     this.adjustProperties();
     this.forceDirectedGraphService.loadData().then((data) => {
+      this.data = data;
       const types = ['0', '1'];
       const config = {
         svg: this.svg,
@@ -79,7 +79,12 @@ export class ForceDirectedGraphComponent implements OnInit {
         linkColor: scaleOrdinal(types, ['green', 'red']),
         nodeColor: scaleOrdinal(
           ['3', '2', '1', '0'],
-          ['green', 'yellow', 'orange', 'red']
+          [
+            'rgb(179, 222, 105)',
+            'rgb(255, 255, 179)',
+            'rgb(253, 180, 98)',
+            'rgb(251, 128, 114)',
+          ]
         ),
         types,
       };
@@ -89,79 +94,165 @@ export class ForceDirectedGraphComponent implements OnInit {
           this.node = node;
           this.link = link;
           this.zoomHandler = zoomHandler;
-          node.on('click', (event, d) => {
-            if (this.selectionType === 'multipleNodes')
-              this.multipleNodeSelection(event.target);
-            else this.debtLayersSelection(event.target, d);
-          });
-          select('#zoomIn').on('click', () => {
-            zoomHandler.scaleBy(
-              this.svg.transition().duration(750) as unknown as TransitionLike<
-                Element,
-                unknown
-              >,
-              1.2
-            );
-          });
-          select('#zoomOut').on('click', () => {
-            zoomHandler.scaleBy(
-              this.svg.transition().duration(750) as unknown as TransitionLike<
-                Element,
-                unknown
-              >,
-              0.8
-            );
-          });
-          select('#zoomReset').on('click', () => {});
+          this.moveToCenter();
+          this.addNodeClickHandlers(node);
+          this.addZoomHandlers(zoomHandler);
+          this.addTooltip(this.svg);
         });
     });
   }
-  private debtLayersSelection(node: any, d: ForceDirectedGraphNode) {
-    this.clearSelection();
-    this.updateElementSelection(select(node), true);
-    this.updateAdjacentNodesNdLinksSelection(d);
+  private addZoomHandlers(zoomHandler: ZoomBehavior<Element, unknown>) {
+    select('#zoomIn').on('click', () => {
+      zoomHandler.scaleBy(
+        this.svg.transition().duration(750) as unknown as TransitionLike<
+          Element,
+          unknown
+        >,
+        1.2
+      );
+    });
+    select('#zoomOut').on('click', () => {
+      zoomHandler.scaleBy(
+        this.svg.transition().duration(750) as unknown as TransitionLike<
+          Element,
+          unknown
+        >,
+        0.8
+      );
+    });
+    select('#zoomReset').on('click', () => {
+      zoomHandler.scaleTo(
+        this.svg.transition().duration(750) as unknown as TransitionLike<
+          Element,
+          unknown
+        >,
+        1,
+        [0, 0]
+      );
+    });
   }
-  private clearSelection() {
+
+  private addNodeClickHandlers(
+    node: d3Selection<
+      BaseType | SVGGElement,
+      ForceDirectedGraphNode,
+      SVGGElement,
+      any
+    >
+  ) {
+    node.on('click', (event, d) => {
+      if (this.selectionType === 'multipleNodes') {
+        this.multipleNodeSelection(event.target);
+        if (!this.multipleNodeSelectionData) {
+          this.multipleNodeSelectionData = [];
+        }
+        this.multipleNodeSelectionData.push(d);
+      } else {
+        this.debtLayersSelection(event.target, d);
+        this.debtLayerNode = d;
+      }
+    });
+  }
+
+  private debtLayersSelection(node: any, d: ForceDirectedGraphNode) {
+    this.resetNodesndLinkSelection();
+    const nodeSelection = select(node);
+    this.updateElementSelection(nodeSelection, true);
+    nodeSelection.classed('primary-node', true);
+    this.updateAdjacentNodesNdLinksSelection(d);
+    this.setNonDebtLayerNodesndLinksSelection();
+  }
+  private resetNodesndLinkSelection() {
     select('#nodes').selectAll('circle:not(.selected)').style('opacity', '1');
     select('#links').selectAll('path:not(.selected)').style('opacity', '1');
+    select<SVGGElement, ForceDirectedGraphLink[]>('#links')
+      .selectAll<SVGGElement, ForceDirectedGraphLink>('.selected')
+      .attr(
+        'marker-end',
+        (d: ForceDirectedGraphLink) =>
+          `url(${new URL(
+            `#marker-` + (d.target as ForceDirectedGraphNode).id,
+            location.href
+          )})`
+      );
     select('#nodes').selectAll('.selected').classed('selected', false);
+    select('#nodes').selectAll('.primary-node').classed('primary-node', false);
     select('#links').selectAll('.selected').classed('selected', false);
   }
+  private setNonDebtLayerNodesndLinksSelection() {
+    select('#nodes')
+      .selectAll('circle:not(.selected)')
+      .style('opacity', '0.25');
+    select('#links').selectAll('path:not(.selected)').style('opacity', '0.25');
+  }
   private updateAdjacentNodesNdLinksSelection(d: ForceDirectedGraphNode) {
-    const adjacentNodes: ForceDirectedGraphNode[] = [];
-    this.node?.each(() => {
-      this.link?.each((link, linkIndex, links) => {
-        if ((link.source as ForceDirectedGraphNode).id === d.id) {
-          this.updateElementSelection(select(links[linkIndex]), true);
-          adjacentNodes.push(link.target as ForceDirectedGraphNode);
-        }
+    const adjacentLinks:
+      | { sourceNodeId: string; targetNodeId: string }[]
+      | undefined = this.data?.links
+      .filter((item) => (item.source as ForceDirectedGraphNode).id === d.id)
+      .map((item) => ({
+        sourceNodeId: (item.source as ForceDirectedGraphNode).id,
+        targetNodeId: (item.target as ForceDirectedGraphNode).id,
+      }));
+    console.log(adjacentLinks);
+    const adjacentNodes: string[] | undefined = adjacentLinks?.map(
+      (item) => item.targetNodeId
+    );
+    console.log(adjacentNodes);
+    const immediateLinks:
+      | { sourceNodeId: string; targetNodeId: string }[]
+      | undefined = adjacentNodes
+      ?.map((adjacentNode) =>
+        this.data?.links
+          .filter(
+            (item) =>
+              (item.source as ForceDirectedGraphNode).id === adjacentNode
+          )
+          .map((item) => ({
+            sourceNodeId: (item.source as ForceDirectedGraphNode).id,
+            targetNodeId: (item.target as ForceDirectedGraphNode).id,
+          }))
+      )
+      .reduce((prev, next) => {
+        return prev?.concat(
+          next as { sourceNodeId: string; targetNodeId: string }[]
+        );
       });
-    });
-    adjacentNodes.forEach((node) => {
-      this.updateElementSelection(
-        select('#nodes')
-          .select('#node-' + node.id)
-          .select('circle'),
-        true
+    console.log(immediateLinks);
+    const immediateNodes: string[] | undefined = immediateLinks?.map(
+      (item) => item.targetNodeId
+    );
+    console.log(immediateNodes);
+    adjacentLinks?.map((link) =>
+      this.updateLinkSelection(link.sourceNodeId, link.targetNodeId)
+    );
+    adjacentNodes?.map((node) => this.updateNodeSelection(node));
+    immediateLinks?.map((link) =>
+      this.updateLinkSelection(link.sourceNodeId, link.targetNodeId)
+    );
+    immediateNodes?.map((node) => this.updateNodeSelection(node));
+    select<SVGGElement, ForceDirectedGraphLink[]>('#links')
+      .selectAll<SVGGElement, ForceDirectedGraphLink>('.selected')
+      .attr(
+        'marker-end',
+        (d: ForceDirectedGraphLink) =>
+          `url(${new URL(
+            `#selected-marker-` + (d.target as ForceDirectedGraphNode).id,
+            location.href
+          )})`
       );
-      this.link?.each((link, linkIndex, links) => {
-        if ((link.source as ForceDirectedGraphNode).id === node.id) {
-          this.updateElementSelection(select(links[linkIndex]), true);
-          this.updateElementSelection(
-            select('#nodes')
-              .select('#node-' + (link.target as ForceDirectedGraphNode).id)
-              .select('circle'),
-            true
-          );
-        }
-      });
-      select('#nodes')
-        .selectAll('circle:not(.selected)')
-        .style('opacity', '0.25');
-      select('#links')
-        .selectAll('path:not(.selected)')
-        .style('opacity', '0.05');
-    });
+  }
+  updateNodeSelection(nodeId: string): any {
+    this.updateElementSelection(
+      this.svg.select('#nodes').select(`#node-${nodeId}`).select('circle'),
+      true
+    );
+  }
+  updateLinkSelection(sourceNodeId: string, targetNodeId: string): any {
+    this.updateElementSelection(
+      select('#links').select(`#node-${sourceNodeId}-${targetNodeId}`),
+      true
+    );
   }
   private multipleNodeSelection(node: any) {
     if (select(node).classed('selected')) {
@@ -214,6 +305,77 @@ export class ForceDirectedGraphComponent implements OnInit {
   }
   onSelectionTypeChanged(value: string) {
     this.selectionType = value;
-    this.clearSelection();
+    this.resetNodesndLinkSelection();
+    this.debtLayerNode = undefined;
+    this.multipleNodeSelectionData = undefined;
+  }
+  moveToCenter() {
+    this.zoomHandler?.translateTo(
+      this.svg.transition().duration(750) as unknown as TransitionLike<
+        Element,
+        unknown
+      >,
+      0,
+      0
+    );
+  }
+
+  private addTooltip(svg: d3Selection<SVGSVGElement, any, any, any>) {
+    const tooltip = select('#tooltip')
+      .append('div')
+      .style('opacity', 0)
+      .attr('class', 'tooltip');
+
+    // Three function that change the tooltip when user hover / move / leave a cell
+    const mouseover = (event: any, d: ForceDirectedGraphNode) => {
+      console.log(d);
+      tooltip.html(`<div class="tooltip-wrapper">
+  <div class="tooltip-title">CompanyInfo : ${d.name}</div>
+  <div class="tooltip-content">
+    <div class="row">
+      <span class="key">Employee Count</span>
+      <span class="value">${d.employeeCount}</span>
+    </div>
+    <div class="row">
+      <span class="key">License Number</span>
+      <span class="value">${d.licenseNumber}</span>
+    </div>
+    <div class="row">
+      <span class="key">Sector</span>
+      <span class="value">${d.sector}</span>
+    </div>
+    <div class="row">
+      <span class="key">Size</span>
+      <span class="value">${d.size}</span>
+    </div>
+  </div>
+</div>`);
+      tooltip.style('opacity', 1);
+    };
+    const mousemove = (event: any, d: ForceDirectedGraphNode) => {
+      tooltip
+        .style('left', event.pageX + 10 + 'px')
+        .style('top', event.pageY + 10 + 'px');
+    };
+    const mouseleave = (event: any) => {
+      tooltip.style('opacity', 0);
+    };
+    svg
+      .select('#nodes')
+      .selectAll<SVGGElement, ForceDirectedGraphNode>('g')
+      .on('mouseover', mouseover)
+      .on('mousemove', mousemove)
+      .on('mouseleave', mouseleave);
+  }
+  actionButtonClicked(btn: string) {
+    let data: string = '';
+    if (this.selectionType === 'multipleNodes') {
+      data = this.multipleNodeSelectionData
+        ?.map((item) => item.id)
+        .join(':') as string;
+    } else {
+      data = this.debtLayerNode?.id as string;
+    }
+    window.open(`https://www.billsphere.com/link?data=${data}`);
   }
 }
