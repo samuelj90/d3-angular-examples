@@ -7,6 +7,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   scaleOrdinal,
   select as d3select,
@@ -15,7 +16,11 @@ import {
   select,
   ZoomBehavior,
   TransitionLike,
+  zoomIdentity,
+  zoomTransform,
+  Transition,
 } from 'd3';
+import { environment } from 'src/environments/environment';
 import {
   ForceDirectedGraphData,
   ForceDirectedGraphLink,
@@ -53,13 +58,16 @@ export class ForceDirectedGraphComponent implements OnInit {
   selectionType: string = 'debtLayers';
   debtLayerNode: ForceDirectedGraphNode | undefined;
   multipleNodeSelectionData: ForceDirectedGraphNode[] | undefined;
-  constructor(private forceDirectedGraphService: ForceDirectedGraphService) {
+  constructor(
+    private forceDirectedGraphService: ForceDirectedGraphService,
+    private activatedRoute: ActivatedRoute
+  ) {
     this.searchForm = new FormGroup({
       q: new FormControl('', [Validators.required]),
     });
   }
   ngOnInit(): void {
-    this.svg = d3select<SVGSVGElement, any>('svg');
+    this.svg = d3select<SVGSVGElement, any>('svg')
   }
   @HostListener('window:resize', ['$event'])
   onResize(): void {
@@ -69,66 +77,81 @@ export class ForceDirectedGraphComponent implements OnInit {
   ngAfterViewInit() {
     this.initializeHeightAndWidth();
     this.adjustProperties();
-    this.forceDirectedGraphService.loadData().then((data) => {
-      this.data = data;
-      const types = ['0', '1'];
-      const config = {
-        svg: this.svg,
-        width: this.width,
-        height: this.height,
-        linkColor: scaleOrdinal(types, ['green', 'red']),
-        nodeColor: scaleOrdinal(
-          ['3', '2', '1', '0'],
-          [
-            'rgb(179, 222, 105)',
-            'rgb(255, 255, 179)',
-            'rgb(253, 180, 98)',
-            'rgb(251, 128, 114)',
-          ]
-        ),
-        types,
-      };
-      this.forceDirectedGraphService
-        .draw(data, config)
-        .then(({ node, link, zoomHandler }) => {
-          this.node = node;
-          this.link = link;
-          this.zoomHandler = zoomHandler;
-          this.moveToCenter();
-          this.addNodeClickHandlers(node);
-          this.addZoomHandlers(zoomHandler);
-          this.addTooltip(this.svg);
-        });
-    });
+    this.forceDirectedGraphService
+      .loadData(
+        this.activatedRoute.snapshot.paramMap.get('code')
+          ? `${environment.baseUrl}/assets/transaction.csv`
+          : `${environment.baseUrl}/assets/transaction-1.csv`
+      )
+      .then((data) => {
+        this.data = data;
+        const types = ['0', '1'];
+        const config = {
+          svg: this.svg,
+          width: this.width,
+          height: this.height,
+          linkColor: scaleOrdinal(types, ['green', 'red']),
+          nodeColor: scaleOrdinal(
+            ['3', '2', '1', '0'],
+            [
+              'rgb(179, 222, 105)',
+              'rgb(255, 255, 179)',
+              'rgb(253, 180, 98)',
+              'rgb(251, 128, 114)',
+            ]
+          ),
+          types,
+        };
+        this.forceDirectedGraphService
+          .draw(data, config)
+          .then(({ node, link, zoomBehaviour }) => {
+            this.node = node;
+            this.link = link;
+            this.zoomHandler = zoomBehaviour;
+            this.addNodeClickHandlers(node);
+            this.addZoomHandlers(zoomBehaviour);
+            this.addTooltip(this.svg);
+          });
+      });
   }
-  private addZoomHandlers(zoomHandler: ZoomBehavior<Element, unknown>) {
-    select('#zoomIn').on('click', () => {
-      zoomHandler.scaleBy(
-        this.svg.transition().duration(750) as unknown as TransitionLike<
-          Element,
-          unknown
-        >,
-        1.2
-      );
-    });
+  private addZoomHandlers(zoomBehaviour: ZoomBehavior<Element, unknown>) {
     select('#zoomOut').on('click', () => {
-      zoomHandler.scaleBy(
-        this.svg.transition().duration(750) as unknown as TransitionLike<
-          Element,
-          unknown
-        >,
-        0.8
-      );
+      this.svg
+        .transition()
+        .call(
+          zoomBehaviour.scaleBy as unknown as (
+            transition: Transition<SVGSVGElement, any, any, any>,
+            ...args: any[]
+          ) => any,
+          0.5
+        );
+    });
+    select('#zoomIn').on('click', () => {
+      this.svg
+        .transition()
+        .call(
+          zoomBehaviour.scaleBy as unknown as (
+            transition: Transition<SVGSVGElement, any, any, any>,
+            ...args: any[]
+          ) => any,
+          2
+        );
     });
     select('#zoomReset').on('click', () => {
-      zoomHandler.scaleTo(
-        this.svg.transition().duration(750) as unknown as TransitionLike<
-          Element,
-          unknown
-        >,
-        1,
-        [0, 0]
-      );
+      this.svg
+        .transition()
+        .duration(750)
+        .call(
+          zoomBehaviour.transform as unknown as (
+            transition: Transition<SVGSVGElement, any, any, any>,
+            ...args: any[]
+          ) => any,
+          zoomIdentity,
+          zoomTransform(this.svg?.node() as Element).invert([
+            this.width / 2,
+            this.height / 2,
+          ])
+        )
     });
   }
 
@@ -308,16 +331,6 @@ export class ForceDirectedGraphComponent implements OnInit {
     this.resetNodesndLinkSelection();
     this.debtLayerNode = undefined;
     this.multipleNodeSelectionData = undefined;
-  }
-  moveToCenter() {
-    this.zoomHandler?.translateTo(
-      this.svg.transition().duration(750) as unknown as TransitionLike<
-        Element,
-        unknown
-      >,
-      0,
-      0
-    );
   }
 
   private addTooltip(svg: d3Selection<SVGSVGElement, any, any, any>) {

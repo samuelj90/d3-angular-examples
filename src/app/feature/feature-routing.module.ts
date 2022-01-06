@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { FeatureComponent } from './feature.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'force-directed-graph' },
+  { path: '', pathMatch: 'full', redirectTo: 'force-directed-graph' },
   {
     path: 'force-directed-graph',
     loadChildren: () =>

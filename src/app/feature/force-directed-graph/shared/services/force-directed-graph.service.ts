@@ -14,6 +14,7 @@ import {
   zoom,
   ZoomBehavior,
 } from 'd3';
+import { environment } from 'src/environments/environment';
 import { ForceDirectedGraphConfig } from './force-directed-graph-config';
 import {
   ForceDirectedGraphData,
@@ -25,13 +26,15 @@ import {
 })
 export class ForceDirectedGraphService {
   constructor() {}
-  loadData() {
+  loadData(
+    transactionCSVFileURl = `${environment.baseUrl}/assets/transaction-1.csv`
+  ) {
     return new Promise<ForceDirectedGraphData>((resolve, reject) => {
       try {
         Promise.all([
-          csv('/assets/entityinfo.csv'),
-          csv('/assets/relationship.csv'),
-          csv('/assets/transaction-1.csv'),
+          csv(`${environment.baseUrl}/assets/entityinfo.csv`),
+          csv(`${environment.baseUrl}/assets/relationship.csv`),
+          csv(transactionCSVFileURl),
         ]).then(
           ([entityInfos, relationships, transactions]: [
             DSVRowArray<string>,
@@ -89,7 +92,7 @@ export class ForceDirectedGraphService {
       SVGGElement,
       any
     >;
-    zoomHandler: ZoomBehavior<Element, unknown>;
+    zoomBehaviour: ZoomBehavior<Element, unknown>;
   }> {
     return new Promise((resolve, reject) => {
       try {
@@ -130,9 +133,7 @@ export class ForceDirectedGraphService {
             return 'marker-' + (d.target as ForceDirectedGraphNode).id;
           })
           .attr('viewBox', '0 -2.5 5 5')
-          .attr('refX', (d) => {
-            return Number((d.target as ForceDirectedGraphNode).size) * 2 + 5;
-          })
+          .attr('refX', 15.95)
           .attr('refY', 0)
           .attr('markerWidth', 5) // markerWidth equals viewBox width
           .attr('markerHeight', 5)
@@ -152,9 +153,7 @@ export class ForceDirectedGraphService {
             return 'selected-marker-' + (d.target as ForceDirectedGraphNode).id;
           })
           .attr('viewBox', '0 -2.5 5 5')
-          .attr('refX', (d) => {
-            return Number((d.target as ForceDirectedGraphNode).size) * 2 + 5;
-          })
+          .attr('refX', 15.95)
           .attr('refY', 0)
           .attr('markerWidth', 5) // markerWidth equals viewBox width
           .attr('markerHeight', 5)
@@ -223,7 +222,7 @@ export class ForceDirectedGraphService {
           .append('circle')
           .attr('stroke', 'rgb(0, 0, 0)')
           .attr('stroke-width', 1.5)
-          .attr('r', (d) => Number(d.size) * 2)
+          .attr('r', 15)
           .attr('fill', (d) => nodeColor(d.healthStatus));
         node
           .append('text')
@@ -244,12 +243,12 @@ export class ForceDirectedGraphService {
         const onZoom = (event: any) => {
           mainGroup.attr('transform', event.transform);
         };
-        const zoomHandler = zoom().on('zoom', onZoom);
-        zoomHandler(svg as unknown as Selection<Element, unknown, any, any>);
+        const zoomBehaviour = zoom().on('zoom', onZoom);
+        zoomBehaviour(svg as unknown as Selection<Element, unknown, any, any>);
         resolve({
           node,
           link,
-          zoomHandler,
+          zoomBehaviour,
         });
       } catch (e) {
         reject(e);
