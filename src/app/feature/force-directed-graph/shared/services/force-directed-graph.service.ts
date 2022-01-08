@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   BaseType,
   csv,
+  D3ZoomEvent,
   drag,
   DSVRowArray,
   forceCollide,
@@ -10,9 +11,13 @@ import {
   forceSimulation,
   forceX,
   forceY,
+  select,
   Selection,
   zoom,
   ZoomBehavior,
+  zoomIdentity,
+  ZoomTransform,
+  zoomTransform,
 } from 'd3';
 import { environment } from 'src/environments/environment';
 import { ForceDirectedGraphConfig } from './force-directed-graph-config';
@@ -26,48 +31,60 @@ import {
 })
 export class ForceDirectedGraphService {
   constructor() {}
-  loadData(
-    transactionCSVFileURl = `${environment.baseUrl}/assets/transaction-1.csv`
-  ) {
+  loadData() {
     return new Promise<ForceDirectedGraphData>((resolve, reject) => {
       try {
         Promise.all([
-          csv(`${environment.baseUrl}/assets/entityinfo.csv`),
-          csv(`${environment.baseUrl}/assets/relationship.csv`),
-          csv(transactionCSVFileURl),
+          csv(`${environment.baseUrl}${environment.nodesCSVUrl}`),
+          csv(`${environment.baseUrl}${environment.linksCSVUrl}`),
         ]).then(
-          ([entityInfos, relationships, transactions]: [
-            DSVRowArray<string>,
-            DSVRowArray<string>,
-            DSVRowArray<string>
-          ]) => {
+          ([nodes, links]: [DSVRowArray<string>, DSVRowArray<string>]) => {
             let chartData: ForceDirectedGraphData = {
               nodes: [],
               links: [],
             };
-            entityInfos.map((item, index) => {
-              chartData.nodes.push({
-                id: item['Companyid'] as string,
-                name: item['Company_name'] as string,
-                size: item['size'] as string,
-                sector: item['sector'] as string,
-                licenseNumber: item['license_number'] as string,
-                employeeCount: item['employee_count'] as string,
-                state: item['state'] as string,
-                trnNumber: item['trnnumber'] as string,
-                healthStatus: item['health_status'] as string,
-                index: index,
+            try {
+              if (!links || !nodes) {
+                throw Error(
+                  'Csv files doesnot contain enough data to plot graph'
+                );
+              }
+              nodes.map((item, index) => {
+                if (!item['Companyid'] || !item['Company_name']) {
+                  throw Error(
+                    'Required csv columns :-  Companyid ,  Company_name is missing in nodes csv file'
+                  );
+                }
+                chartData.nodes.push({
+                  id: item['Companyid'] as string,
+                  name: item['Company_name'] as string,
+                  size: item['size'] as string,
+                  sector: item['sector'] as string,
+                  licenseNumber: item['license_number'] as string,
+                  employeeCount: item['employee_count'] as string,
+                  state: item['state'] as string,
+                  trnNumber: item['trnnumber'] as string,
+                  healthStatus: item['health_status'] as string,
+                  index: index,
+                });
               });
-            });
-            transactions.map((item, index) => {
-              chartData.links.push({
-                source: item['payer'] as string,
-                target: item['payee'] as string,
-                type: item['status'] as string,
-                value: Number(item['amount']),
-                index: index,
+              links.map((item, index) => {
+                if (!item['payer'] || !item['payee'] || !item['status']) {
+                  throw Error(
+                    'Required csv columns :-  payer ,  payee is missing in links csv file'
+                  );
+                }
+                chartData.links.push({
+                  source: item['payer'] as string,
+                  target: item['payee'] as string,
+                  type: item['status'] as string,
+                  value: Number(item['amount']),
+                  index: index,
+                });
               });
-            });
+            } catch (e) {
+              reject(e);
+            }
             resolve(chartData);
           }
         );
@@ -75,6 +92,24 @@ export class ForceDirectedGraphService {
         reject(e);
       }
     });
+  }
+  getTranslate(translate: string): { x: number | null; y: number | null } {
+    const translateArray = translate
+      ? translate
+          .substring(translate.indexOf('(') + 1, translate.indexOf(')'))
+          .split(',')
+      : [];
+    if (translateArray && translateArray.length === 2) {
+      return {
+        x: parseFloat(translateArray[0] || '0'),
+        y: parseFloat(translateArray[1] || '0'),
+      };
+    } else {
+      return {
+        x: null,
+        y: null,
+      };
+    }
   }
   draw(
     data: ForceDirectedGraphData,
@@ -92,7 +127,7 @@ export class ForceDirectedGraphService {
       SVGGElement,
       any
     >;
-    zoomBehaviour: ZoomBehavior<Element, unknown>;
+    zoomBehaviour: ZoomBehavior<SVGElement, any>;
   }> {
     return new Promise((resolve, reject) => {
       try {
@@ -111,11 +146,6 @@ export class ForceDirectedGraphService {
             'collide',
             forceCollide((d) => 65)
           );
-        svg
-          .append('rect')
-          .attr('width', '100%')
-          .attr('height', '100%')
-          .attr('fill', '#000000');
         const mainGroup = svg.append('g').attr('id', 'main-group');
         const linkDirectionMarkers: Selection<
           SVGGElement,
@@ -240,11 +270,10 @@ export class ForceDirectedGraphService {
           link.attr('d', linkArc);
           node.attr('transform', (d) => `translate(${d.x},${d.y})`);
         });
-        const onZoom = (event: any) => {
-          mainGroup.attr('transform', event.transform);
+        const onZoom = (event: D3ZoomEvent<SVGElement, any>) => {
+          mainGroup.attr('transform', event.transform.toString());
         };
-        const zoomBehaviour = zoom().on('zoom', onZoom);
-        zoomBehaviour(svg as unknown as Selection<Element, unknown, any, any>);
+        const zoomBehaviour = zoom<SVGElement, any>().on('zoom', onZoom);
         resolve({
           node,
           link,
@@ -254,23 +283,5 @@ export class ForceDirectedGraphService {
         reject(e);
       }
     });
-  }
-  getTranslate(translate: string): { x: number | null; y: number | null } {
-    const translateArray = translate
-      ? translate
-          .substring(translate.indexOf('(') + 1, translate.indexOf(')'))
-          .split(',')
-      : [];
-    if (translateArray && translateArray.length === 2) {
-      return {
-        x: parseFloat(translateArray[0] || '0'),
-        y: parseFloat(translateArray[1] || '0'),
-      };
-    } else {
-      return {
-        x: null,
-        y: null,
-      };
-    }
   }
 }

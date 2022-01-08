@@ -5,6 +5,15 @@
 export const environment = {
   production: false,
   baseUrl: '',
+  nodesCSVUrl: '/assets/entityinfo.csv',
+  linksCSVUrl: '/assets/transaction-1.csv',
+  actionUrls: {
+    analyze: '',
+    diagnose: '',
+    classify: '',
+    predict: '',
+    prescribe: '',
+  },
 };
 
 /*

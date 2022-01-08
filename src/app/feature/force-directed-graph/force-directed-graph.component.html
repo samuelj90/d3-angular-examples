@@ -1,34 +1,57 @@
 <div (window:resize)="onResize()" id="graphContainer" #graphContainer>
-    <div class="search">
-        <form [formGroup]="searchForm" (ngSubmit)="onSearchFormSubmit($event)">
-            <input type="text" placeholder="Search" formControlName="q">
-            <input type="submit" value="GO">
-        </form>
+  <div class="search">
+    <form [formGroup]="searchForm" (ngSubmit)="onSearchFormSubmit()">
+      <input type="text" placeholder="Search" formControlName="q" />
+      <input type="submit" value="GO" />
+    </form>
+  </div>
+  <div id="tooltip" class="tooltip"></div>
+  <div id="popup" class="popup"></div>
+  <svg></svg>
+  <div class="graph-controls">
+    <div class="zoom-control zoom-in" id="zoomIn">+</div>
+    <div class="zoom-control zoom-out" id="zoomOut">-</div>
+    <div class="zoom-control zoom-reset" id="zoomReset">↺</div>
+  </div>
+  <div class="selection-control">
+    <div (click)="onNodeSelectionTypeChanged('multipleNodes')">
+      <input
+        type="radio"
+        name="selectionControl"
+        [(ngModel)]="selectionType"
+        [value]="'multipleNodes'"
+      />
+      Multiple Nodes
     </div>
-    <div id="tooltip" class="tooltip">
-
+    <div (click)="onNodeSelectionTypeChanged('debtLayers')">
+      <input
+        type="radio"
+        name="selectionControl"
+        [(ngModel)]="selectionType"
+        [value]="'debtLayers'"
+      />
+      Debt Layers
     </div>
-    <svg>
-
-    </svg>
-    <div class="graph-controls">
-        <div class="zoom-control zoom-in" id="zoomIn">+</div>
-        <div class="zoom-control zoom-out" id="zoomOut">-</div>
-        <div class="zoom-control zoom-reset" id="zoomReset">↺</div>
+  </div>
+  <div class="actions">
+    <div class="action-button" (click)="actionButtonClicked('analyze')">
+      <img [src]="url('/assets/images/analyse.png')" alt="Analyze" title="Analyze" />
     </div>
-    <div class="selection-control">
-        <div (click)="onSelectionTypeChanged('multipleNodes')">
-            <input type="radio" name="selectionControl" [(ngModel)]=" selectionType" [value]="'multipleNodes'" />
-            Multiple Nodes
-        </div>
-        <div (click)="onSelectionTypeChanged('debtLayers')"><input type="radio" name="selectionControl"
-                [(ngModel)]="selectionType" [value]="'debtLayers'" /> Debt Layers</div>
+    <div class="action-button" (click)="actionButtonClicked('diagnose')">
+      <img [src]="url('/assets/images/diagnose.png')" alt="Diagnose" title="Diagnose" />
     </div>
-    <div class="actions">
-        <div class="action-button" (click)="actionButtonClicked('1')">😀</div>
-        <div class="action-button">😉</div>
-        <div class="action-button">😐</div>
-        <div class="action-button">😍</div>
-        <div class="action-button">🙁</div>
+    <div class="action-button" (click)="actionButtonClicked('classify')">
+      <img [src]="url('/assets/images/classify.png')" alt="Clasify" title="Clasify" />
     </div>
+    <div class="action-button" (click)="actionButtonClicked('predict')">
+      <img [src]="url('/assets/images/predict.png')" alt="Predict" title="Predict" />
+    </div>
+    <div class="action-button" (click)="actionButtonClicked('prescribe')">
+      <img
+        [src]="url('/assets/images/prescribe.png')"
+        alt="Prescribe"
+        title="Prescribe"
+      />
+    </div>
+  </div>
 </div>

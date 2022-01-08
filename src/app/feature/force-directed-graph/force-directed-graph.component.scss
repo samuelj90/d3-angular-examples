@@ -1,6 +1,7 @@
 #graphContainer {
-  width: calc(100vw - 15px);
-  height: calc(100vh - 5px);
+  width: calc(100vw);
+  height: calc(100vh);
+  overflow: hidden;
   svg {
     fill: rgba(0, 0, 0, 0.5) !important;
     #nodes {
@@ -45,6 +46,10 @@
     width: $buttonWidth;
     border-radius: 0px 5px 5px 0px;
   }
+  input:focus-visible {
+    outline-offset: 0px;
+    outline: none;
+  }
   padding: 10px;
   min-width: 300px;
 }
@@ -65,23 +70,15 @@
 .actions {
   position: fixed;
   bottom: 10px;
-  height: 50px;
   width: auto;
-  position: fixed;
   left: 50%;
   transform: translate(-50%, 0);
   .action-button {
-    width: 60px;
-    height: 50px;
-    border: 1px solid rgba(0, 0, 0, 0.75);
-    background: rgba(176, 196, 222, 0.75);
     float: left;
     margin: 0 5px;
-    line-height: 50px;
-    font-size: 25px;
-    text-align: center;
-    &:hover {
-      background: rgba(176, 196, 222, 1);
+    img {
+      height: 64px;
+      width: 64px;
     }
   }
 }
@@ -90,9 +87,9 @@
   top: 0px;
   left: 0px;
   .zoom-control {
-    background: rgba(176, 196, 222, 0.75) none repeat scroll 0% 0%;
-    border: 1px solid rgba(0, 0, 0, 0.75);
-    color: rgba(0, 0, 0, 0.75);
+    background-color: rgb(40 48 55);
+    border: 1px solid rgba(0, 0, 0);
+    color: rgba(255, 255, 255);
     display: block;
     height: 20px;
     margin: 5px;
@@ -137,4 +134,42 @@
       }
     }
   }
+}
+
+#popup {
+  color: #fff;
+  .popup {
+    background-color: rgb(40 48 55);
+    padding: 5px;
+    position: absolute;
+    width: 225px;
+    top: calc(100vh / 2 - 125px / 2);
+    left: calc(100vw / 2 - 225px / 2);
+    border-radius: 2px;
+    text-align: center;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 30px 60px -12px inset,
+      rgba(0, 0, 0, 0.3) 0px 18px 36px -18px inset;
+    .popup-title {
+      font-weight: bold;
+      font-size: 18px;
+      padding: 5px 10px;
+      border-bottom: 1px solid rgb(56 56 56);
+    }
+    .popup-content {
+      padding: 5px 10px;
+    }
+    button {
+      background: none;
+      margin: 5px 10px;
+      color: #fff;
+      border: 1px solid rgb(56 56 56);
+      padding: 5px 20px;
+      cursor: pointer;
+    }
+  }
+}
+
+img[title]:hover::after {
+  padding: 15px;
+  background: rgb(40 48 55);
 }
