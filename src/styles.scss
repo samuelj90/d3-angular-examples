@@ -1,9 +1,16 @@
-/* You can add global styles to this file, and also import other style files */
+@use './assets/scss/scss-variables';
+@use './assets/scss/reset';
+@use './assets/scss/colors';
+@use './assets/scss/spacing';
+@use './assets/scss/shared-styles';
+@use './assets/scss/typography';
+@use './assets/scss/icons';
+@use './assets/scss/buttons';
+@use './assets/scss/forms';
+@use './assets/scss/z-index';
+@use './assets/scss/visibility';
+@use './assets/scss/accessibility';
+@use './assets/scss/util';
+@use './assets/scss/variables';
+
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');
-body {
-  margin: 0;
-  padding: 0;
-  background: rgb(0, 0, 0) !important;
-  font-family: "Source Sans Pro", Sans-serif;
-  overflow: hidden;
-}
