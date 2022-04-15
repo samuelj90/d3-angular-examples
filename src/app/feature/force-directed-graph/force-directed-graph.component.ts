@@ -98,7 +98,6 @@ export class ForceDirectedGraphComponent implements OnInit {
           });
       },
       (error) => {
-        console.log(error);
         this.popup('Data provided to draw chart seems not valid');
       }
     );
@@ -125,7 +124,6 @@ export class ForceDirectedGraphComponent implements OnInit {
             item.y && !isNaN(item.y)
               ? this.height / 2 - item.y * mainGroupTransform.k
               : this.height / 2;
-          console.log(dcx, dcy);
           const transform = zoomIdentity
             .translate(dcx, dcy)
             .scale(mainGroupTransform.k);
