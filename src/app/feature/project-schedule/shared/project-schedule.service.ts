@@ -12,7 +12,7 @@ export class ProjectScheduleService {
 
   getProjectSchedule(): Observable<ProjectScheduleData[]> {
     return this.httpClient.get<any[]>(
-      'https://api.json-generator.com/templates/tA6qe81gwwyf/data?access_token=tkctfgez603ctnvcj245l452d1ntfc3kbhydtx3k'
+      '/assets/sample.json'
     ).pipe(map((value) => {
       const response: ProjectScheduleData[]
         = value.map((item) => {
